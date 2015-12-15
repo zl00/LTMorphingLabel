@@ -85,79 +85,71 @@ public struct LTCharacterDiffResult : CustomDebugStringConvertible {
 
 public func >>(lhs: String, rhs: String) -> [LTCharacterDiffResult] {
     
-    let newChars = rhs.characters.enumerate()
+    let rightChars = rhs.characters.enumerate()
     let lhsLength = lhs.characters.count
     let rhsLength = rhs.characters.count
     var skipIndexes = [Int]()
     let leftChars = Array(lhs.characters)
     
-    let maxLength = max(lhsLength, rhsLength)
-    var diffResults = Array(count: maxLength, repeatedValue: LTCharacterDiffResult())
+    var diffResults = Array(count: max(lhsLength, rhsLength), repeatedValue: LTCharacterDiffResult())
     
-    for i in 0..<maxLength {
-        // If new string is longer than the original one
-        if i > lhsLength - 1 {
-            continue
-        }
+    for leftIndex in 0..<lhsLength {
         
-        let leftChar = leftChars[i]
+        let leftChar = leftChars[leftIndex]
         
         // Search left character in the new string
         var foundCharacterInRhs = false
-        for (j, newChar) in newChars {
-            let currentCharWouldBeReplaced = {
+        for (rightIndex, rightChar) in rightChars {
+            let rightCharDidFlag = {
                 (index: Int) -> Bool in
-                for k in skipIndexes {
-                    if index == k {
+                for skipIndex in skipIndexes {
+                    if index == skipIndex {
                         return true
                     }
                 }
                 return false
-                }(j)
+                }(rightIndex)
             
-            if currentCharWouldBeReplaced {
+            if rightCharDidFlag {
                 continue
             }
             
-            if leftChar == newChar {
-                skipIndexes.append(j)
+            if leftChar == rightChar {
+                skipIndexes.append(rightIndex)
                 foundCharacterInRhs = true
-                if i == j {
+                if leftIndex == rightIndex {
                     // Character not changed
-                    diffResults[i].diffType = .Same
+                    diffResults[leftIndex].diffType = .Same
                 } else {
                     // foundCharacterInRhs and move
-                    diffResults[i].diffType = .Move
-                    if i <= rhsLength - 1 {
+                    diffResults[leftIndex].diffType = .Move
+                    if leftIndex + 1 <= rhsLength {
                         // Move to a new index and add a new character to new original place
-                        diffResults[i].diffType = .MoveAndAdd
+                        diffResults[leftIndex].diffType = .MoveAndAdd
                     }
-                    diffResults[i].moveOffset = j - i
+                    diffResults[leftIndex].moveOffset = rightIndex - leftIndex
                 }
                 break
             }
         }
         
         if !foundCharacterInRhs {
-            if i < rhs.characters.count - 1 {
-                diffResults[i].diffType = .Replace
+            if leftIndex + 1 <= rhs.characters.count {
+                diffResults[leftIndex].diffType = .Replace
             } else {
-                diffResults[i].diffType = .Delete
+                diffResults[leftIndex].diffType = .Delete
             }
         }
     }
     
-    var i = 0
-    for result in diffResults {
-        switch result.diffType {
+    for (i, diffResult) in diffResults.enumerate() {
+        switch diffResult.diffType {
         case .Move, .MoveAndAdd:
-            diffResults[i + result.moveOffset].skip = true
+            diffResults[i + diffResult.moveOffset].skip = true
         default:
             ()
         }
-        i++
     }
     
     return diffResults
-    
 }

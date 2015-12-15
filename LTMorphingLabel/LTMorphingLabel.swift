@@ -65,8 +65,8 @@ typealias LTMorphingSkipFramesClosure =
 @IBDesignable public class LTMorphingLabel : UILabel {
     
     @IBInspectable public var morphingProgress: Float = 0.0
-    @IBInspectable public var morphingDuration: Float = 0.6
-    @IBInspectable public var morphingCharacterDelay: Float = 0.026
+    @IBInspectable public var morphingDuration: Float = 0.6 * 2.0
+    @IBInspectable public var morphingCharacterDelay: Float = 0.026 * 1
     @IBInspectable public var morphingEnabled: Bool = true
     @IBOutlet public weak var delegate: LTMorphingLabelDelegate?
     public var morphingEffect: LTMorphingEffect = .Scale
@@ -119,9 +119,7 @@ typealias LTMorphingSkipFramesClosure =
                 morphingProgress = 0.5
             } else if previousText != text {
                 displayLink.paused = false
-                if let closure = startClosures[
-                    "\(morphingEffect.description)\(phaseStart)"
-                    ] {
+                if let closure = startClosures["\(morphingEffect.description)\(phaseStart)"] {
                         return closure()
                 }
                 
@@ -178,11 +176,11 @@ extension LTMorphingLabel {
     
     func displayFrameTick() {
         if displayLink.duration > 0.0 && totalFrames == 0 {
-            let frameRate = Float(displayLink.duration) / Float(displayLink.frameInterval)
-            totalFrames = Int(ceil(morphingDuration / frameRate))
+            
+            totalFrames = Int(ceil(morphingDuration / Float(displayLink.duration)))
             
             let totalDelay = Float((text!).characters.count) * morphingCharacterDelay
-            totalDelayFrames = Int(ceil(totalDelay / frameRate))
+            totalDelayFrames = Int(ceil(totalDelay / Float(displayLink.duration)))
         }
         
         if previousText != text && currentFrame++ < totalFrames + totalDelayFrames + 5 {
@@ -410,7 +408,7 @@ extension LTMorphingLabel {
         for charLimbo in limboOfCharacters() {
             let charRect:CGRect = charLimbo.rect
             
-            let willAvoidDefaultDrawing: Bool = {
+            let isDefaultDrawing: Bool = {
                 if let closure = drawingClosures[
                     "\(morphingEffect.description)\(phaseDraw)"
                     ] {
@@ -419,7 +417,7 @@ extension LTMorphingLabel {
                 return false
                 }(charLimbo)
             
-            if !willAvoidDefaultDrawing {
+            if !isDefaultDrawing {
                 let s = String(charLimbo.char)
                 s.drawInRect(charRect, withAttributes: [
                     NSFontAttributeName:

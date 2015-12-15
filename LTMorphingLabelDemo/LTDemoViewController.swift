@@ -11,15 +11,24 @@ import UIKit
 class LTDemoViewController : UIViewController, LTMorphingLabelDelegate {
     
     private var i = 0
+//    private var textArray = [
+//        "What is design?",
+//        "Design", "Design is not just", "what it looks like", "and feels like.",
+//        "Design", "is how it works.", "- Steve Jobs",
+//        "Older people", "sit down and ask,", "'What is it?'",
+//        "but the boy asks,", "'What can I do with it?'.", "- Steve Jobs",
+//        "", "Swift", "Objective-C", "iPhone", "iPad", "Mac Mini", "MacBook Pro", "Mac Pro",
+//        "爱老婆",
+//        "老婆和女儿"]
     private var textArray = [
-        "What is design?",
-        "Design", "Design is not just", "what it looks like", "and feels like.",
-        "Design", "is how it works.", "- Steve Jobs",
-        "Older people", "sit down and ask,", "'What is it?'",
-        "but the boy asks,", "'What can I do with it?'.", "- Steve Jobs",
-        "", "Swift", "Objective-C", "iPhone", "iPad", "Mac Mini", "MacBook Pro", "Mac Pro",
-        "爱老婆",
-        "老婆和女儿"]
+        "AB",
+        "ABC",
+        "AB",
+        "ACB",
+        "ABC",
+        "ABD"
+        ]
+
     private var text: String {
         if i >= textArray.count {
             i = 0
