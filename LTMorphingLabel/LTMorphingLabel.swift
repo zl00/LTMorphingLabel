@@ -65,7 +65,7 @@ typealias LTMorphingSkipFramesClosure =
 @IBDesignable public class LTMorphingLabel : UILabel {
     
     @IBInspectable public var morphingProgress: Float = 0.0
-    @IBInspectable public var morphingDuration: Float = 0.6 * 2.0
+    @IBInspectable public var morphingDuration: Float = 0.6 * 1.0
     @IBInspectable public var morphingCharacterDelay: Float = 0.026 * 1
     @IBInspectable public var morphingEnabled: Bool = true
     @IBOutlet public weak var delegate: LTMorphingLabelDelegate?
@@ -262,10 +262,10 @@ extension LTMorphingLabel {
             var currentFontSize: CGFloat = font.pointSize
             var currentAlpha: CGFloat = 1.0
             
-            switch diffResult.diffType {
+            switch diffResult.originPositionAct {
                 // Move the character that exists in the new text to current position
-            case .Move, .MoveAndAdd, .Same:
-                newX = Float(newRects[index + diffResult.moveOffset].origin.x)
+            case .Reuse(let moveOffset):
+                newX = Float(newRects[index + moveOffset].origin.x)
                 currentRect.origin.x = CGFloat(
                     LTEasing.easeOutQuint(progress, oriX, newX - oriX)
                 )
@@ -364,16 +364,13 @@ extension LTMorphingLabel {
             
             // Don't draw character that already exists
             let diffResult = diffResults[i]
-            if diffResult.skip {
-                continue
-            }
             
-            switch diffResult.diffType {
-            case .MoveAndAdd, .Replace, .Add, .Delete:
+            switch diffResult.currentPositionAct {
+            case .Old, .None:
+                continue
+            case .New:
                 let limboOfCharacter = limboOfNewCharacter(character, index: i, progress: progress)
                 limbo.append(limboOfCharacter)
-            default:
-                ()
             }
         }
         

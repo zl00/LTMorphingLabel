@@ -28,60 +28,67 @@
 import Foundation
 
 
-public enum LTCharacterDiffType : Int, CustomDebugStringConvertible {
+public enum LTOriginPositionActionType : CustomDebugStringConvertible {
     
-    case Same = 0
-    case Add = 1
-    case Delete
-    case Move
-    case MoveAndAdd
-    case Replace
+    case Reuse(Int)
+    case Discard
     
     public var debugDescription: String {
         switch self {
-        case .Same:
-            return "Same"
-        case .Add:
-            return "Add"
-        case .Delete:
-            return "Delete"
-        case .Move:
-            return "Move"
-        case .MoveAndAdd:
-            return "MoveAndAdd"
-        default:
-            return "Replace"
+        case .Reuse(let offset):
+            return "[Origin] Reuse \(offset)"
+        case .Discard:
+            return "[Origin] Discard"
         }
     }
-    
 }
 
+public enum LTCurrentPositionActionType: CustomDebugStringConvertible {
+    
+    case New
+    case Old
+    case None
+    
+    public var debugDescription: String {
+        switch self {
+        case .New:
+            return "[Current] New"
+        case .Old:
+            return "[Current] Old"
+        case .None:
+            return "[Current] None"
+        }
+    }
+}
 
 public struct LTCharacterDiffResult : CustomDebugStringConvertible {
     
-    public var diffType: LTCharacterDiffType = .Add
-    public var moveOffset: Int = 0
-    public var skip: Bool = false
+    public var originPositionAct: LTOriginPositionActionType = .Discard
+    public var currentPositionAct: LTCurrentPositionActionType = .New
     
     public var debugDescription: String {
-        switch diffType {
-        case .Same:
-            return "The character is unchanged."
-        case .Add:
-            return "A new character is ADDED."
-        case .Delete:
-            return "The character is DELETED."
-        case .Move:
-            return "The character is MOVED to \(moveOffset)."
-        case .MoveAndAdd:
-            return "The character is MOVED to \(moveOffset) and a new character is ADDED."
-        default:
-            return "The character is REPLACED with a new character."
+        
+        var info: String = ""
+        
+        switch originPositionAct {
+        case .Reuse(let offset):
+            info = "[Reuse] Move to \(offset),"
+        case .Discard:
+            info = "[Discard]"
         }
+        
+        switch currentPositionAct {
+        case .New:
+            info += " new"
+        case .Old:
+            info += " old"
+        case .None:
+            info += " none"
+        }
+        
+        return info
     }
-    
 }
-
 
 public func >>(lhs: String, rhs: String) -> [LTCharacterDiffResult] {
     
@@ -92,9 +99,9 @@ public func >>(lhs: String, rhs: String) -> [LTCharacterDiffResult] {
     let leftChars = Array(lhs.characters)
     
     var diffResults = Array(count: max(lhsLength, rhsLength), repeatedValue: LTCharacterDiffResult())
+    if rhsLength < lhsLength { for index in rhsLength..<lhsLength { diffResults[index].currentPositionAct = .None }}
     
     for leftIndex in 0..<lhsLength {
-        
         let leftChar = leftChars[leftIndex]
         
         // Search left character in the new string
@@ -108,7 +115,7 @@ public func >>(lhs: String, rhs: String) -> [LTCharacterDiffResult] {
                     }
                 }
                 return false
-                }(rightIndex)
+            }(rightIndex)
             
             if rightCharDidFlag {
                 continue
@@ -117,39 +124,18 @@ public func >>(lhs: String, rhs: String) -> [LTCharacterDiffResult] {
             if leftChar == rightChar {
                 skipIndexes.append(rightIndex)
                 foundCharacterInRhs = true
-                if leftIndex == rightIndex {
-                    // Character not changed
-                    diffResults[leftIndex].diffType = .Same
-                } else {
-                    // foundCharacterInRhs and move
-                    diffResults[leftIndex].diffType = .Move
-                    if leftIndex + 1 <= rhsLength {
-                        // Move to a new index and add a new character to new original place
-                        diffResults[leftIndex].diffType = .MoveAndAdd
-                    }
-                    diffResults[leftIndex].moveOffset = rightIndex - leftIndex
-                }
+                
+                diffResults[leftIndex].originPositionAct = .Reuse(rightIndex - leftIndex)
+                diffResults[rightIndex].currentPositionAct = .Old
                 break
             }
         }
         
         if !foundCharacterInRhs {
-            if leftIndex + 1 <= rhs.characters.count {
-                diffResults[leftIndex].diffType = .Replace
-            } else {
-                diffResults[leftIndex].diffType = .Delete
-            }
+            diffResults[leftIndex].originPositionAct = .Discard
         }
     }
     
-    for (i, diffResult) in diffResults.enumerate() {
-        switch diffResult.diffType {
-        case .Move, .MoveAndAdd:
-            diffResults[i + diffResult.moveOffset].skip = true
-        default:
-            ()
-        }
-    }
     
     return diffResults
 }
